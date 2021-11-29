@@ -1,3 +1,4 @@
-nltk>=3.6.5
-nnsplit>=0.5.8.post0
+nltk==3.6.5
+nnsplit==0.5.8.post0
 numpy==1.16.6
+ftfy==6.0.3

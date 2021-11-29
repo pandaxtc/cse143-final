@@ -10,13 +10,10 @@ import json
 import re
 
 
-
-
-
-
+DATASET_PATH = "data/self_tokenized_tweet.json"
 
 if __name__ == "__main__":
-    l = load_dataset("data/messages.json")
+    l = json.load(open(DATASET_PATH, encoding="utf8"))
 
     bigram_lm = MLE(2)
     bigram_training, vocab = padded_everygram_pipeline(2, l)

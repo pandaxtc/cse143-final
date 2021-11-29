@@ -8,17 +8,25 @@ because conversations in group chats are too hard to keep track of.
 The Hangouts data is a single extremely large JSON file. The messenger
 data is a series of directories representing groups/DMs with messages in
 a JSON file.
+
+For some reason, multibyte UTF-8 sequences are represented incorrectly
+in some datasets. I use ftfy to fix this. Thanks ftfy devs!
 """
 
 from dataclasses import dataclass, field, asdict
 from glob import glob
 
 import json
+from operator import is_
+import ftfy
+import unicodedata
+import numpy
 
 HANGOUTS_PATH = "messages/google/Hangouts/Hangouts.json"
 MESSENGER_PATH = "messages/facebook/*/*.json"
 ME = "Waylon Peng"
 HANGOUTS_ID = "102894839669481941064"
+
 
 @dataclass
 class Message:
@@ -33,13 +41,49 @@ class Conversation:
     messages: list[Message] = field(default_factory=list)
 
 
+"""
+Sadly because the dataset is derived from my messages as a kid, it
+contains a lot of Zalgo text. Here's some methods to try and fix it.
+"""
+ZALGO_CHAR_CATEGORIES = ["Mn", "Me"]
+THRESHOLD = 0.5
+
+
+def is_zalgo(s):
+    if len(s) == 0:
+        return False
+    word_scores = []
+    for word in s.split():
+        cats = [unicodedata.category(c) for c in word]
+        score = sum([cats.count(banned) for banned in ZALGO_CHAR_CATEGORIES]) / len(
+            word
+        )
+        word_scores.append(score)
+
+    if not word_scores:
+        return False
+
+    total_score = numpy.percentile(word_scores, 75)
+    return total_score > THRESHOLD
+
+
+def clean(s):
+    if is_zalgo(s):
+        s = "".join(
+            c
+            for c in unicodedata.normalize("NFD", s)
+            if unicodedata.category(c) not in ZALGO_CHAR_CATEGORIES
+        )
+    return ftfy.fix_text(s)
+
+
 if __name__ == "__main__":
     convos = []
 
     """
     Load data from Hangouts
     """
-    h = json.load(open(HANGOUTS_PATH))
+    h = json.load(open(HANGOUTS_PATH, encoding="utf8"))
     for c in h["conversations"]:
         if (
             c["conversation"]["conversation"]["type"] != "STICKY_ONE_TO_ONE"
@@ -49,10 +93,10 @@ if __name__ == "__main__":
 
         convo = Conversation()
         for p in c["conversation"]["conversation"]["participant_data"]:
-            if "fallback_name" in p:
-                convo.participants[p["id"]["chat_id"]] = p["fallback_name"]
-            elif p["id"]["chat_id"] == HANGOUTS_ID:
+            if p["id"]["chat_id"] == HANGOUTS_ID:
                 convo.participants[p["id"]["chat_id"]] = ME
+            elif "fallback_name" in p:
+                convo.participants[p["id"]["chat_id"]] = p["fallback_name"]
             else:
                 convo.participants[p["id"]["chat_id"]] = "unknown"
 
@@ -76,7 +120,7 @@ if __name__ == "__main__":
         for msg in msgs:
             if msg["sender_id"]["chat_id"] == last_id:
                 convo.messages[-1].content.append(
-                    msg["chat_message"]["message_content"]["segment"][0]["text"]
+                    clean(msg["chat_message"]["message_content"]["segment"][0]["text"])
                 )
             else:
                 convo.messages.append(
@@ -85,7 +129,13 @@ if __name__ == "__main__":
                             msg["sender_id"]["chat_id"], msg["sender_id"]["chat_id"]
                         ),
                         msg["timestamp"],
-                        [msg["chat_message"]["message_content"]["segment"][0]["text"]],
+                        [
+                            clean(
+                                msg["chat_message"]["message_content"]["segment"][0][
+                                    "text"
+                                ]
+                            )
+                        ],
                     )
                 )
                 last_id = msg["sender_id"]["chat_id"]
@@ -98,7 +148,7 @@ if __name__ == "__main__":
     Load data from Messenger
     """
     for f in glob(MESSENGER_PATH):
-        with open(f) as f:
+        with open(f, encoding="utf8") as f:
             c = json.load(f)
             if c["thread_type"] != "Regular":
                 continue
@@ -116,17 +166,22 @@ if __name__ == "__main__":
 
             for msg in msgs:
                 if msg["sender_name"] == last_id:
-                    convo.messages[-1].content.append(msg["content"])
+                    convo.messages[-1].content.append(clean(msg["content"]))
                 else:
                     convo.messages.append(
                         Message(
                             msg["sender_name"],
                             str(msg["timestamp_ms"]),
-                            [msg["content"]],
+                            [clean(msg["content"])],
                         )
                     )
                     last_id = msg["sender_name"]
 
             convos.append(convo)
 
-    json.dump([asdict(convo) for convo in convos], open("messages.json", "w"), indent="\t")
+    json.dump(
+        [asdict(convo) for convo in convos],
+        open("messages.json", "w", encoding="utf8"),
+        indent="\t",
+        ensure_ascii=False,
+    )
