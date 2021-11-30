@@ -4,16 +4,14 @@ data:
     src: "src"
     trg: "trg"
     # generate data with scripts/generate_reverse_task.py
-    train: "data/joeynmt/reverse/train"
-    dev: "data/joeynmt/reverse/train"
-    test: "data/joeynmt/reverse/train"
+    train: "data/joeynmt/messages/train"
+    dev: "data/joeynmt/messages/dev"
+    test: "data/joeynmt/messages/test"
     level: "word"
     lowercase: False
-    max_sent_length: 25
+    max_sent_length: 50
     src_voc_min_freq: 0
-    src_voc_limit: 100
     trg_voc_min_freq: 0
-    trg_voc_limit: 100
     #src_vocab: "reverse_model/src_vocab.txt"
     #trg_vocab: "reverse_model/trg_vocab.txt"
 
@@ -38,7 +36,7 @@ training:
     validation_freq: 1000
     logging_freq: 100
     eval_metric: "bleu"
-    model_dir: "reverse_model"
+    model_dir: "models/message_model_naive"
     overwrite: True
     shuffle: True
     use_cuda: False
