@@ -1,6 +1,5 @@
 __*/
 .vscode/
-data/*/
-data/*.json
+data/
 venv/
 models/

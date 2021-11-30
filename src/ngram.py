@@ -13,8 +13,8 @@ from itertools import chain, islice
 
 DATASET_PATH = "data/self_tokenized.json"
 
-def asym_pad_ngram_pipeline(n, l):
 
+def asym_pad_ngram_pipeline(n, l):
     def pad(s):
         s = ["<s>"] + s
         return pad_sequence(s, n, pad_right=True, right_pad_symbol="</s>")
@@ -23,6 +23,7 @@ def asym_pad_ngram_pipeline(n, l):
         (everygrams(list(pad(sent)), max_len=n, min_len=2) for sent in l),
         chain.from_iterable(map(pad, l)),
     )
+
 
 if __name__ == "__main__":
     l = json.load(open(DATASET_PATH, encoding="utf8"))

@@ -17,13 +17,12 @@ from dataclasses import dataclass, field, asdict
 from glob import glob
 
 import json
-from operator import is_
 import ftfy
 import unicodedata
 import numpy
 
-HANGOUTS_PATH = "messages/google/Hangouts/Hangouts.json"
-MESSENGER_PATH = "messages/facebook/*/*.json"
+HANGOUTS_PATH = "data/messages/google/Hangouts/Hangouts.json"
+MESSENGER_PATH = "data/messages/facebook/*/*.json"
 ME = "Waylon Peng"
 HANGOUTS_ID = "102894839669481941064"
 
@@ -74,7 +73,7 @@ def clean(s):
             for c in unicodedata.normalize("NFD", s)
             if unicodedata.category(c) not in ZALGO_CHAR_CATEGORIES
         )
-    return ftfy.fix_text(s)
+    return ftfy.fix_text(s).strip()
 
 
 if __name__ == "__main__":
@@ -107,6 +106,10 @@ if __name__ == "__main__":
             for msg in c["events"]
             if msg["event_type"] == "REGULAR_CHAT_MESSAGE"
             and "segment" in msg["chat_message"]["message_content"]
+            and any(
+                "text" in seg
+                for seg in msg["chat_message"]["message_content"]["segment"]
+            )
         ]
 
         if len(msgs) < 2:
@@ -120,7 +123,14 @@ if __name__ == "__main__":
         for msg in msgs:
             if msg["sender_id"]["chat_id"] == last_id:
                 convo.messages[-1].content.append(
-                    clean(msg["chat_message"]["message_content"]["segment"][0]["text"])
+                    clean(
+                        " ".join(
+                            map(
+                                lambda seg: seg["text"] if "text" in seg else "",
+                                msg["chat_message"]["message_content"]["segment"],
+                            )
+                        )
+                    )
                 )
             else:
                 convo.messages.append(
@@ -131,9 +141,16 @@ if __name__ == "__main__":
                         msg["timestamp"],
                         [
                             clean(
-                                msg["chat_message"]["message_content"]["segment"][0][
-                                    "text"
-                                ]
+                                " ".join(
+                                    map(
+                                        lambda seg: seg["text"]
+                                        if "text" in seg
+                                        else "",
+                                        msg["chat_message"]["message_content"][
+                                            "segment"
+                                        ],
+                                    )
+                                )
                             )
                         ],
                     )
@@ -159,7 +176,18 @@ if __name__ == "__main__":
 
             print(f"processing messenger convo {convo.participants}")
 
-            msgs = [msg for msg in c["messages"] if "content" in msg]
+            msgs = [
+                msg
+                for msg in c["messages"]
+                if "content" in msg
+                and not msg["content"].lower().startswith("words with friends:")
+                and msg["content"] != ""
+            ]
+
+            if len(msgs) < 2:
+                print("!! no chat messages in convo")
+                continue
+
             msgs.sort(key=lambda m: m["timestamp_ms"])
 
             last_id = None
@@ -181,7 +209,7 @@ if __name__ == "__main__":
 
     json.dump(
         [asdict(convo) for convo in convos],
-        open("messages.json", "w", encoding="utf8"),
+        open("data/messages.json", "w", encoding="utf8"),
         indent="\t",
         ensure_ascii=False,
     )
