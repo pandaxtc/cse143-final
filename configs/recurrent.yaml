@@ -9,8 +9,8 @@ data:
     level: "word"
     lowercase: True
     max_sent_length: 50
-    src_voc_min_freq: 2
-    trg_voc_min_freq: 2
+    src_voc_min_freq: 1
+    trg_voc_min_freq: 1
    
 testing:
     beam_size: 1
@@ -19,23 +19,23 @@ testing:
 training:
     random_seed: 420
     optimizer: "adam"
-    learning_rate: 0.0005
+    learning_rate: 0.001
     learning_rate_min: 0.00005
-    batch_size: 30
+    batch_size: 10
     scheduling: "plateau"
     patience: 0
     decrease_factor: 0.5
-    early_stopping_metric: "ppl"
-    epochs: 10
+    early_stopping_metric: "eval_metric"
+    epochs: 5
     validation_freq: 1000
     logging_freq: 100
     eval_metric: "bleu"
-    model_dir: "models/message_model_naive"
+    model_dir: "models/message_model"
     overwrite: True
     shuffle: True
-    use_cuda: False
+    use_cuda: True
     max_output_length: 100
-    print_valid_sents: [0, 1, 2, 3, 4]
+    print_valid_sents: [0, 5, 10, 15, 20]
 
 model:
     encoder:
