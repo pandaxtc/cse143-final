@@ -1,0 +1,84 @@
+name: "iwslt14-deen-bpe-transformer"
+
+data:
+    src: "src"
+    trg: "trg"
+    train: "data/nmt/messages_nnsplit_21919/train.sp"
+    dev: "data/nmt/messages_nnsplit_21919/dev.sp"
+    test: "data/nmt/messages_nnsplit_21919/test.sp"
+    level: "bpe"
+    lowercase: True
+    max_sent_length: 100
+    src_vocab: "data/nmt/messages_nnsplit_21919/vocab.txt"
+    trg_vocab: "data/nmt/messages_nnsplit_21919/vocab.txt"
+
+testing:
+    beam_size: 5
+    alpha: 1.0
+    postproccess: True
+    bpe_type: "sentencepiece"
+    sacrebleu:
+        remove_whitespace: True
+        tokenize: "13a"
+
+training:
+    random_seed: 42
+    optimizer: "adam"
+    normalization: "tokens"
+    adam_betas: [0.9, 0.999]
+    scheduling: "plateau"
+    patience: 8
+    decrease_factor: 0.7
+    loss: "crossentropy"
+    learning_rate: 0.0002
+    learning_rate_min: 0.00000001
+    weight_decay: 0.0
+    label_smoothing: 0.1
+    batch_size: 2048
+    batch_type: "token"
+    early_stopping_metric: "ppl"
+    epochs: 50
+    validation_freq: 1000
+    logging_freq: 100
+    eval_metric: "chrf"
+    model_dir: "models/transfomer_unigram_21919"
+    overwrite: False
+    shuffle: True
+    use_cuda: True
+    # fp16: True
+    max_output_length: 40
+    print_valid_sents: [0, 5, 10, 15, 20]
+    keep_best_ckpts: -1
+
+model:
+    initializer: "xavier"
+    embed_initializer: "xavier"
+    embed_init_gain: 1.0
+    init_gain: 1.0
+    bias_initializer: "zeros"
+    tied_embeddings: True
+    tied_softmax: True
+    encoder:
+        type: "transformer"
+        num_layers: 6
+        num_heads: 8
+        embeddings:
+            embedding_dim: 512
+            scale: True
+            dropout: 0.
+        # typically ff_size = 4 x hidden_size
+        hidden_size: 512
+        ff_size: 2048
+        dropout: 0.1
+    decoder:
+        type: "transformer"
+        num_layers: 6
+        num_heads: 8
+        embeddings:
+            embedding_dim: 512
+            scale: True
+            dropout: 0.
+        # typically ff_size = 4 x hidden_size
+        hidden_size: 512
+        ff_size: 2048
+        dropout: 0.1

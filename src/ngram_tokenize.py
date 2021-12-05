@@ -43,7 +43,7 @@ def generate_self_tokens():
     for convo in load_convos():
         assert ME in convo.participants.values(), str(convo)
         for message in convo.messages:
-            if message.sender_id == ME:
+            if message.speaker == ME:
                 sents.extend(per_msg_tweet_tokenize(message.content))
     return sents
 

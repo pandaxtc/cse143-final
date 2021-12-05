@@ -1,6 +1,7 @@
 __*/
 .vscode/
-data/
+data/*
+!data/movies
 venv/
 models/
 test/
