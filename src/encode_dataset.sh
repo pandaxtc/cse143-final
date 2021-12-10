@@ -93,7 +93,7 @@ assign_positional_args 1 "${_positionals[@]}"
 # [ <-- needed because of Argbash
 
 target_data_dir=${_arg_data_dir%/}_${_arg_model_type}_${_arg_vocab_size}/
-model_prefix=models/sp_$(basename ${target_data_dir})_${_arg_model_type}_${_arg_vocab_size}
+model_prefix=models/sp_$(basename ${target_data_dir})
 
 cp -r ${_arg_data_dir} ${target_data_dir}
 
@@ -108,9 +108,6 @@ for f in $(find ${target_data_dir} | grep -P './\w+.(src|trg)$'); do
     spm_encode --model=${model_prefix}.model $f >${f%.*}.sp.${f##*.}
 done
 
-python3 lib/joeynmt/scripts/build_vocab.py \
-    ${target_data_dir}/train.sp.src \
-    ${target_data_dir}/train.sp.trg \
-    --output_path=${target_data_dir}/vocab.txt
+cut -f1 ${model_prefix}.vocab > ${target_data_dir%/}/vocab.txt
 
 # ] <-- needed because of Argbash
